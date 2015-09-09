@@ -1,0 +1,21 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<ApexComponent xmlns="http://soap.sforce.com/2006/04/metadata">
+    <apiVersion>24.0</apiVersion>
+    <description>This component allows the rendition of navigation controls for a mobile app. Must be used inside an App component along with the PageTemplate.</description>
+    <label>Nav</label>
+    <packageVersions>
+        <majorNumber>1</majorNumber>
+        <minorNumber>14</minorNumber>
+        <namespace>INFA</namespace>
+    </packageVersions>
+    <packageVersions>
+        <majorNumber>166</majorNumber>
+        <minorNumber>1</minorNumber>
+        <namespace>SFGA</namespace>
+    </packageVersions>
+    <packageVersions>
+        <majorNumber>2</majorNumber>
+        <minorNumber>5</minorNumber>
+        <namespace>Skype4SF</namespace>
+    </packageVersions>
+</ApexComponent>

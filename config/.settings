@@ -1,0 +1,19 @@
+{
+    "username": "kamipatel@gmail.com", 
+    "environment": "production", 
+    "project_name": "airprod", 
+    "workspace": "c:\\sfdc\\myprojects", 
+    "org_url": "", 
+    "namespace": "dealme", 
+    "id": "XM6YABC3M97ZSQ6RFTXL3OCUQOI244KZ", 
+    "metadata_container": "1dc50000000TWrbAAG", 
+    "subscription": [
+        "ApexClass", 
+        "ApexComponent", 
+        "ApexPage", 
+        "ApexTrigger", 
+        "StaticResource", 
+        "CustomObject", 
+        "Profile"
+    ]
+}

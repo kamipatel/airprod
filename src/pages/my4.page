@@ -1,0 +1,55 @@
+<apex:page >
+
+
+<apex:stylesheet value="{!URLFOR($Resource.bluestyle, 'my.css')}"/>
+
+<!-- panel start -->
+<div class="divPanel">
+
+<!-- panel header-->
+<div class="divPanelHeader">
+<span class="title">Recent Accounts</span>
+</div>  <!-- panel header end -->
+
+<!-- panel body-->
+<div class="divPanelBody">
+<table cellspacing="0" cellpadding="0" border="0" class="list">
+<tbody>
+<tr>
+<th >Account Name</th>
+<th >Billing City</th>
+<th >Phone</th>
+</tr>
+
+<!-- ListRow -->
+<tr class="even first">
+<td>fdafafzv</td>
+<td>faf;</td>
+<td>xbvxbxbxbzxvvzv;</td>
+</tr>
+<!-- ListRow -->
+<tr class="odd">
+<td>fdafafzv</td>
+<td>faf;</td>
+<td>xbvxbxbxbzxvvzv;</td>
+</tr>
+<!-- ListRow -->
+<tr class="even">
+<td>fdafafzv</td>
+<td>faf;</td>
+<td>xbvxbxbxbzxvvzv;</td>
+</tr>
+</tbody>
+
+</table>
+</div> <!-- panel body end -->
+
+<!-- panel footer-->
+<div class="pbFooter">
+<div class="bg"></div>
+</div><!-- panel footer end -->
+
+</div><!-- panel end -->
+
+  <!-- End Default Content REMOVE THIS -->
+</apex:page>

@@ -1,0 +1,119 @@
+<apex:page standardController="Inventory__c" tabStyle="account">
+<style>
+.activeTab {background-color: #236FBD; color:white;
+background-image:none}
+.inactiveTab { background-color: lightgrey; color:black;
+background-image:none}
+</style>
+
+    <link rel="stylesheet" type="text/css" href="{!$Resource.myStyle}"/>
+    <link rel="stylesheet" type="text/css" href="http://jqueryui.com/themes/base/jquery.ui.all.css"/>
+    <apex:includeScript value="http://code.jquery.com/jquery-latest.js"/>
+    <apex:includeScript value="http://ajax.microsoft.com/ajax/jquery.templates/beta1/jquery.tmpl.min.js"/>
+
+    <script id="dmIdDescTmpl" type="text/x-jQuery-tmpl">
+        <div>
+        ${Name}<br/>
+        <img src="/servlet/servlet.FileDownload?file=${Id}"></img> 
+        </div>
+    </script>
+
+   <script type="text/JavaScript">
+   var id  = "{!Inventory__c.Id}"; //sample inventory id a005000000Lu0isAAB
+    var qAttachements = "/services/data/v22.0/query?q=SELECT+id,Name,ContentType,Description+FROM+Attachment+WHERE+ParentId=";
+   
+   var j$ = jQuery.noConflict();
+   
+    j$(document).ready(function(){
+        console.debug("Getting pictures for id" + id);
+        
+        var ur = qAttachements + "'" + id + "'";              
+        callrest(ur,"handlePicturesAttachementResponse", null);  
+        
+    });
+
+    function handlePicturesAttachementResponse(data){
+        j$("#attachementsListDiv").children().remove();                                                                  
+
+        console.log("handlePicturesAttachementResponsecalled");
+
+        j$.each(data.records, function(index, item) { 
+            if((item.ContentType == "image/jpeg") || (item.ContentType == "image/gif")){
+                j$("#dmIdDescTmpl" ).tmpl(item).appendTo( j$("#attachementsListDiv") );        
+                j$("#attachementsListDiv").append("<br/>");
+            }
+        });
+    
+            
+    };
+
+       </script>
+
+  <script type="text/JavaScript">
+    function callrest(ur, cb, req){
+    var sid = '{!$Api.Session_ID}';
+    var elements = location.hostname.split(".");
+    var instance = (elements.length == 3) ? elements[0] : elements[1];
+    var instanceUrl = "https://" + instance + ".salesforce.com";
+    
+    var realurl = instanceUrl + ur;
+    
+    var proxyUrl = location.protocol + "//" + location.hostname + "/services/proxy";
+    
+    var req = "{}";
+    
+    j$.ajax({
+                   type: "GET",
+                   async:false,
+                   url: proxyUrl ,
+              contentType: 'application/json',
+               processData: false,
+               data: null,                
+                   success: eval(cb),
+                     error: function(jqXHR, textStatus, errorThrown){
+                                     alert("error status=" + jqXHR.status);
+                                     alert("error=" + jqXHR.statusText);
+                                     alert("errorThrown=" + errorThrown);
+                     },
+                   dataType: "json",
+                   beforeSend: function(xhr) {
+                      xhr.setRequestHeader("Authorization", "OAuth " + sid);
+                      xhr.setRequestHeader('SalesforceProxy-Endpoint', realurl );
+                      xhr.setRequestHeader('X-User-Agent', 'salesforce-toolkit-rest-javascript/' + "22.0");
+                   }
+           });
+    };    
+      
+       </script>
+
+<apex:tabPanel switchType="client" selectedTab="tabdetails"
+id="AccountTabPanel" tabClass="activeTab"
+inactiveTabClass="inactiveTab">
+<apex:tab label="Details" name="AccDetails" id="tabdetails">
+<apex:detail relatedList="false" title="true"/>
+</apex:tab>
+<apex:tab label="Contacts" name="Contacts" id="tabContact">
+
+</apex:tab>
+<apex:tab label="Opportunities" name="Opportunities"
+id="tabOpp">
+faaf
+</apex:tab>
+<apex:tab label="Open Activities" name="OpenActivities"
+id="tabOpenAct">
+</apex:tab>
+<apex:tab label="Notes and Attachments"
+name="NotesAndAttachments" id="tabNoteAtt">
+</apex:tab>
+
+<apex:tab label="Pictures"
+name="Pictures" id="tabPictures">
+<div id="attachementsListDiv"></div>
+</apex:tab>
+
+</apex:tabPanel>
+
+
+
+
+</apex:page>

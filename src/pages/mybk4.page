@@ -1,0 +1,873 @@
+<apex:page controller="testremotingcontroller" sidebar="false">
+<link rel="stylesheet" type="text/css" href="{!$Resource.myStyle}"/>
+<apex:includeScript value="http://code.jquery.com/jquery-latest.js"/>
+<apex:includeScript value="http://ajax.microsoft.com/ajax/jquery.templates/beta1/jquery.tmpl.min.js"/>
+
+<script id="dmUserTmpl" type="text/x-jQuery-tmpl">
+    <option value="${Id}">${dealme__Name__c}</option>
+</script>
+
+<script id="dmVendorTmpl" type="text/x-jQuery-tmpl">
+    <option value="${Id}">${dealme__Names__c}</option>
+</script>
+
+<script id="dmPaidWithTmpl" type="text/x-jQuery-tmpl">
+    <option value="${Id}">${dealme__Type__c}</option>
+</script>
+
+<script id="dmSalesTaxTmpl" type="text/x-jQuery-tmpl">
+    <option value="${Id}">${dealme__County__c}-${dealme__tax__c}</option>
+</script>
+
+<script id="dmIdNameSelectTmpl" type="text/x-jQuery-tmpl">
+    <option value="${Id}">${Name}</option>
+</script>
+
+
+<script id="dealRowTemplate" type="text/x-jquery-tmpl">
+<tr id="${Id}" rowType="deal" rowBehave="inline" actionTable="dealVehicleInfo" onfocus="if (window.hiOn){hiOn(this);}" onblur="if (window.hiOff){hiOff(this);}" onmouseout="if (window.hiOff){hiOff(this);} " onmouseover="if (window.hiOn){hiOn(this);} " class="dataRow even  first">
+    <td class="actionColumn">
+    <a class="actionLink Edit" href="#">Edit</a>&nbsp;|&nbsp;
+    <a class="actionLink Del" href="#">Del</a>
+    </td>
+    <td class="dataCell dealrow">${Id}</td>
+    <td class="dataCell dealrow">${dealme__SoldPrice__c}</td>    
+    <td class="dataCell dealrow">${dealme__Inventory__r.dealme__VIN__c}</td>    
+    <td class="dataCell dealrow">${dealme__Inventory__r.dealme__Make__r.Name}</td>           
+</tr>          
+</script>
+
+<script id="dealAccountsRowTemplate" type="text/x-jquery-tmpl">
+<tr id="${Id}" onfocus="if (window.hiOn){hiOn(this);}" onblur="if (window.hiOff){hiOff(this);}" onmouseout="if (window.hiOff){hiOff(this);} " onmouseover="if (window.hiOn){hiOn(this);} " class="dataRow even  first">
+    <td class="actionColumn">
+    <a class="actionLink" href="#">Edit</a>&nbsp;|&nbsp;
+    <a class="actionLink" href="#">Del</a>
+    </td>
+    <td class="dataCell dealaccountrow">${Id}</td>
+    <td class="dataCell dealaccountrow">${AccountNumber}</td>    
+    <td class="dataCell dealaccountrow">${Name}</td>    
+    <td class="dataCell dealaccountrow">${Phone}</td>           
+</tr>          
+</script>
+
+<script id="dealVehicleInfoRowTemplate" type="text/x-jquery-tmpl">
+<tr>
+<td class="labelCol">
+Save as Quote{{html explode("checkbox", "quoteId","dealme__IsQuote__c", "","" ,dealme__IsQuote__c,"", "","") }}
+</td>
+<td class="labelCol">
+Spot Deal{{html explode("checkbox", "spotId","dealme__IsSpotDeal__c", "","" , dealme__IsSpotDeal__c,"", "","") }}
+</td>
+<td class="labelCol">
+Tag Paid{{html explode("checkbox", "paidId","dealme__IsTagPaid__c", "","" , dealme__IsTagPaid__c,"", "","") }}
+</td>
+<td class="labelCol">
+Deal Funded{{html explode("checkbox", "fundedId","dealme__IsDealFunded__c", "","" , dealme__IsDealFunded__c,"", "","") }}
+</td>
+</tr>
+
+<tr>
+<td class="labelCol">Sold Vehicle</td>
+<td class="dataCol" colspan="3">
+<div id="soldVehicleId" >VIN: ${dealme__Inventory__r.dealme__VIN__c}, Make: ${dealme__Inventory__r.dealme__Make__r.Name}</div>
+<div id="soldVehicleIdEdit" class="hid">Select</div>
+</td>
+
+</tr>
+
+<tr>
+<td class="labelCol">Campaign</td>
+<td  class="dataCol">
+{{html explode("select", "campaign","", "","" ,dealme__Campaign__r.Name,"", "","") }}                        
+</td>
+
+<td class="labelCol">SoldDate</td>
+<td class="dataCol">
+{{html explode("input", "soldDate","dealme__soldDate__c", "","isdouble iscalculate" , dealme__soldDate__c,"", "","date") }}                                
+</td>
+</tr>
+</script>
+
+<script id="dealTemplate" type="text/x-jquery-tmpl">
+<form id="dealForm">
+Deal Type:
+{{html explode("select", "dealType","dealme__DealType__c", "","" ,dealme__DealType__r.Name,"", "","") }}                        
+<p/>Sold Price: 
+{{html explode("input", "SoldPrice","dealme__SoldPrice__c", "","isdouble iscalculate" , dealme__SoldPrice__c,"", "","money") }}                                
+<p/>Trade 1: <span id="Trade1Id">0.00</span>
+<p/>Trade 2: <span id="Trade2Id">0.00</span>
+<p/>Dealer Fee: <span id="dealerFeeId">0.00</span>
+<p/> Warranty: <span id="warrantyId">0.00</span>
+<p/> Taxable: <span id="taxableId"> </span>
+<p/> Sales tax:
+{{html explode("select", "salesTaxSelect","", "","" ,dealme__SalesTax__c,"", "","money") }}                        
+<p/> Titles: 
+{{html explode("input", "titles","dealme__Titles__c", "","isdouble iscalculate" , dealme__Titles__c,"", "","money") }}                                
+<p/> Tags: 
+{{html explode("input", "tags","dealme__Tags__c", "","isdouble iscalculate" , dealme__Tags__c,"", "","money") }}                                
+<p/> Registration: 
+{{html explode("input", "registration","dealme__Registration__c", "","isdouble iscalculate" , dealme__Registration__c,"", "","money") }}                                
+<p/> Pay Off 1: <span id="payoff1Id">0.00</span>
+<p/> Pay Off 2: <span id="payoff2Id">0.00</span>
+<p/> Down Payment: 
+{{html explode("input", "downPayment","dealme__DownPayment__c", "","isdouble iscalculate" , dealme__DownPayment__c,"", "","money") }}      
+<p/> Paid With: 
+{{html explode("select", "paidWith","dealme__PaymentType__c", "","" , dealme__PaymentType__r==null? "" : dealme__PaymentType__r.Name,"", "","") }}                        
+</div>
+<p/> Balance Due: <span id="balalnceDueId">0.00</span>  
+<p/> Sales Person 1:
+{{html explode("select", "salesPerson1","dealme__SalesPerson1__c", "","" ,dealme__SalesPerson1__r==null? "" : dealme__SalesPerson1__r.Name,"", "","") }}                        
+<p/> sales Person1 Commision:
+{{html explode("input", "salesPerson1Commision","dealme__SalesPerson1Commision__c", "","isdouble iscalculate" , dealme__SalesPerson1Commision__c,"", "","money") }}      
+<p/> Sales Person 2:
+{{html explode("select", "salesPerson2","dealme__SalesPerson2__c", "","" , dealme__SalesPerson2__r==null? "" : dealme__SalesPerson2__r.Name,"", "","" ) }}                        
+<p/> sales Person2 Commision:                  
+{{html explode("input", "salesPerson2Commision","dealme__SalesPerson2Commision__c", "","isdouble iscalculate" , dealme__SalesPerson2Commision__c,"", "","money") }}      
+
+</form>
+</script>
+
+<script id="financeTemplate" type="text/x-jquery-tmpl">
+    <form id="financingForm" class="dealForm">
+    <div>
+        <div class="dealDisplay">
+            Finance Company:
+            {{html explode("select", "financeCompany","dealme__FinanceCompany__c", "","" ,dealme__FinanceCompany__r ==null? "" : dealme__FinanceCompany__r.Name,"", "","") }}                        
+        <p/>
+        Discount:                    
+            {{html explode("input", "discount","dealme__discount__c", "","isdouble iscalculate" , dealme__discount__c,"", "","money") }}                                
+        <p/>
+        Interest Rate:                   
+            {{html explode("input", "intrestRate","dealme__InterestRate__c", "","isdouble iscalculate" ,dealme__InterestRate__c,"", "","money") }}                                
+        <p/>
+        Term:                    
+            {{html explode("input", "term","dealme__Term__c", "","isdouble iscalculate" ,  dealme__Term__c,"", "","number") }}                                
+        <p/>
+        Buy Rate:                    
+            {{html explode("input", "buyRate","dealme__BuyRate__c", "","isdouble iscalculate" , dealme__BuyRate__c,"", "","money") }}                                        
+        <p/>
+        Reserve %                    
+            {{html explode("input", "reservePercentage","dealme__FinanceReserve__c", "","isdouble iscalculate" ,dealme__FinanceReserve__c,"", "","money") }}                                                
+        <p/>
+            Warranty Company:
+            {{html explode("select", "warrantyCompany","dealme__WarrantyCompany__c", "","" ,dealme__WarrantyCompany__r ==null? "" : dealme__WarrantyCompany__r.Name,"", "","") }}                                                            
+        <p/>
+        Warranty Price:                  
+            {{html explode("input", "warrantyPrice","dealme__WarrantyPrice__c", "","isdouble iscalculate" ,dealme__WarrantyPrice__c,"", "","money") }}                                                            
+        <p/>
+        Warranty Cost:                   
+            {{html explode("input", "warrantyCost","dealme__WarrantyCost__c", "","isdouble iscalculate" ,dealme__WarrantyCost__c,"", "","money") }}                                                            
+        <p/>
+        GAP Company:
+            {{html explode("select", "gapCompany","dealme__GapCompany__c", "","" ,dealme__GapCompany__r ==null? "" : dealme__GapCompany__r.Name,"", "","") }}                                                            
+        <p/>
+        GAP Price                    
+            {{html explode("input", "gapPrice","dealme__GapPrice__c", "","isdouble iscalculate" ,dealme__GapPrice__c,"", "","money") }}                                                            
+        <p/>
+        GAP Cost                     
+            {{html explode("input", "gapCost","dealme__GapCost__c", "","isdouble iscalculate" ,dealme__GapCost__c,"", "","money") }}                                                            
+        <p/>
+        Insurance Company:
+            {{html explode("select", "insuranceCompany","dealme__InsuranceCompany__c", "","" ,dealme__InsuranceCompany__r ==null? "" : dealme__InsuranceCompany__r.Name,"", "","") }}                                                            
+        <p/>
+        Insurance Price:                     
+            {{html explode("input", "insurancePrice","dealme__InsurancePrice__c", "","isdouble iscalculate" ,dealme__InsurancePrice__c,"", "","money") }}                                                            
+        <p/>
+        insurance Cost:                  
+            {{html explode("input", "insuranceCost","dealme__InsuranceCost__c", "","isdouble iscalculate" ,dealme__InsuranceCost__c,"", "","money") }}                                                            
+        </div>
+        
+        <div class="dealDisplay dealClearDisplay">
+            <p/>Balance Due: <span id="balalnceDueSpanId"></span>
+            <p/>Doc Stamp: <span id="docStampSpanId"></span>
+            <p/>Amount Financed: <span id="amountFinancedSpanId"></span>
+            <p/>Payment Amount: <span id="paymentAmountSpanId"></span>
+            <p/>Late Payement: <span id="latePaymentSpanId"></span>
+            <p/>First Payement Due: <span id="firstPaymentDueSpanId"></span>
+            <p/>Final Payment Due: <span id="finalPayDueSpanId"></span>
+            <p/>Reserve amount: <span id="reserverAmountSpanId"></span>
+        </div>
+    </div>      
+    </form>
+</script>
+
+
+<script id="washoutTemplate" type="text/x-jquery-tmpl">
+        <form id="washoutForm">
+                <table ALIGN="center" >
+                <thead>
+                <th></th>
+                <th>Sales</th>
+                <th>Cost</th>
+                <th>Front End Profit</th>
+                <th>Back end profit</th>
+                </thead>
+                <tr>
+                <td>Vehicle:</td>
+                <td><span id="veVehicleSales"></span></td>
+                <td><span id="veVehicleCost"></span></td>
+                <td><span id="veVehicleFP"></span></td>
+                <td><span id="veVehicleBP"></span></td>
+                </tr>
+                <tr>
+                <td>Accessories:</td>
+                <td><input type="text" id="veAccessories1" name="veAccessories1" value="0.00" class="isdouble" /></td>
+                <td><input type="text" id="veAccessories2" name="veAccessories2" value="0.00" class="isdouble" /></td>
+                <td> </td>
+                <td> </td>
+                </tr>
+                <tr>
+                <td>Trade equity:</td>
+                <td> </td>
+                <td> </td>
+                <td> </td>
+                <td> </td>
+                </tr>
+                <tr>
+                <td>Discount:</td>
+                <td><span id="veDiscountSales"></span></td>
+                <td><span id="veDiscountCost"></span></td>
+                <td><span id="veDiscountFP"></span></td>
+                <td><span id="veDiscountBP"></span></td>
+                </tr>
+                <tr>
+                <td>Warranty:</td>
+                <td><span id="veWarrantySales"></span></td>
+                <td><span id="veWarrantyCost"></span></td>
+                <td><span id="veWarrantyFP"></span></td>
+                <td><span id="veWarrantyBP"></span></td>
+                </tr>
+                <tr>
+                <td>GAP:</td>
+                <td><span id="veGAPSales"></span></span></td>
+                <td><span id="veGAPCost"></span></td>
+                <td><span id="veGAPFP"></span></td>
+                <td><span id="veGAPBP"></span></td>
+                </tr>
+                <tr>
+                <td>Insurance:</td>
+                <td><span id="veInsuranceSales"></span></td>
+                <td><span id="veInsuranceCost"></span></td>
+                <td><span id="veInsuranceFP"></span></td>
+                <td><span id="veInsuranceBP"></span></td>
+                </tr>
+                <tr>
+                <td>Sales commissions:</td>
+                <td><span id="veSCSales"></span></td>
+                <td><span id="veSCCost"></span></td>
+                <td><span id="veSCFP"></span></td>
+                <td><span id="veSCBP"></span></td>
+                </tr>
+                <tr>
+                <td>F&I commissions:</td>
+                <td><span id="veFIComSales"></span></td>
+                <td><span id="veFIComCost"></span></td>
+                <td><span id="veFIComFP"></span></td>
+                <td><span id="veFIComBP"></span></td>
+                </tr>
+                <tr>
+                <td>Reserve:</td>
+                <td><span id="veReserverSales"></span></td>
+                <td><span id="veReserverCost"></span></td>
+                <td><span id="veReserverFP"></span></td>
+                <td><span id="veReserverBP"></span></td>
+                </tr>
+                <tr>
+                <td>Total:</td>
+                <td><span id="veTotalSales"></span></td>
+                <td><span id="veTotalCost"></span></td>
+                <td><span id="veTotalFP"></span></td>
+                <td><span id="veTotalBP"></span></td>
+                </tr>
+                
+                </table>
+            </form>
+
+</script>
+
+<script id="dealTradeVehiclesRowTemplate" type="text/x-jquery-tmpl">
+<tr id="${Id}" onfocus="if (window.hiOn){hiOn(this);}" onblur="if (window.hiOff){hiOff(this);}" onmouseout="if (window.hiOff){hiOff(this);} " onmouseover="if (window.hiOn){hiOn(this);} " class="dataRow even  first">
+    <td class="actionColumn">
+    <a class="actionLink" href="#">Edit</a>&nbsp;|&nbsp;
+    <a class="actionLink" href="#">Del</a>
+    </td>
+    <td class="dataCell dealaccountrow">${Id}</td>
+    <td class="dataCell dealaccountrow">${dealme__payoff__c}</td>    
+    <td class="dataCell dealaccountrow">${dealme__allowance__c}</td>    
+   <td class="dataCell dealrow">${dealme__Inventory__r.dealme__VIN__c}</td>    
+    <td class="dataCell dealrow">${dealme__Inventory__r.dealme__Make__r.Name}</td>               
+</tr>          
+</script>
+
+<script id="dealRefrencesRowTemplate" type="text/x-jquery-tmpl">
+<tr id="${Id}" onfocus="if (window.hiOn){hiOn(this);}" onblur="if (window.hiOff){hiOff(this);}" onmouseout="if (window.hiOff){hiOff(this);} " onmouseover="if (window.hiOn){hiOn(this);} " class="dataRow even  first">
+    <td class="actionColumn">
+    <a class="actionLink" href="#">Edit</a>&nbsp;|&nbsp;
+    <a class="actionLink" href="#">Del</a>
+    </td>
+    <td class="dataCell dealaccountrow">${Id}</td>
+    <td class="dataCell dealaccountrow">${dealme__Contact__r.Name}</td>    
+</tr>          
+</script>
+
+
+<script type="text/JavaScript">
+var lookupres = {};
+var vendorlookupres = {};
+var salesTaxlookupres = {};
+var paramsres = {};
+var paymentTyperes = {};
+var dealTypesres = {};
+var campaignres = {};
+
+var selectedDealId = "";
+
+$(function(){
+
+function serializeTheForm($formid){
+    var fields = $formid.serializeArray();
+      var v = "";
+
+$formid.find("input[type=checkbox]").each(function(){
+    //alert("found checkbox=" + $(this).attr("cname"));
+        if ($(this).is(':checked'))
+        {
+            v  += "\"" + $(this).attr("cname") + "\"" + ":" + "\"" + "true" + "\"";
+        }
+        else{
+            v  += "\"" + $(this).attr("cname") + "\"" + ":" + "\"" + "false" + "\"";
+        }
+        
+        v  += ",";
+});
+
+
+      jQuery.each(fields, function(i, field){
+      var val = field.value;
+        v  += "\"" + field.name + "\"" + ":" + "\"" + val + "\"";
+        if((i + 1) != fields.length)
+        v  += ",";
+      });
+
+
+
+    return v;
+};
+
+$("#SaveEditedDeal").live("click", function(e){
+    var v = serializeTheForm($("#dealForm"));
+    v += ",";
+    v += serializeTheForm($("#financingForm"));    
+    v += ",";
+    v += serializeTheForm($("#dealVehicleForm"));        
+
+
+    var s = "{\"deal\":{\"attributes\":{\"type\":\"dealme__Deal__c\" },\"Id\":\"" + selectedDealId  + "\","+ v  + "}}";
+
+    var dealUpdateUrl = "/services/apexrest/dealme/DealController/";
+    callrestPost(dealUpdateUrl,"handleDealUpdateResponse", s);
+    
+});
+
+$("#CancelEditedDeal").live("click", function(e){
+//    alert("Cancel called");
+});
+
+$("#newDeal").live("click", function(e){
+//    alert("New Deal called");
+});
+
+var lookupur = "/services/data/v22.0/query?q=SELECT+id,dealme__DmUser__r.id,dealme__DmUser__r.dealme__Name__c,dealme__DmRole__r.id,dealme__DmRole__r.dealme__type__c+FROM+dealme__DMRoleUSer__c";     
+callrest(lookupur,"handleLookupResponse", null);      
+
+lookupur = "/services/data/v22.0/query?q=SELECT+id,dealme__Names__c,dealme__VendorType__r.id,dealme__VendorType__r.dealme__Type__c+FROM+dealme__DmVendor__c";
+callrest(lookupur,"handleVendorLookupResponse", null);      
+
+lookupur = "/services/data/v22.0/query?q=SELECT+id,dealme__County__c,dealme__tax__c+FROM+dealme__SalesTax__c";     
+callrest(lookupur,"handleSalexTaxResponse", null);      
+
+lookupur = "/services/data/v22.0/query?q=SELECT+id,dealme__Type__c+FROM+dealme__PaymentType__c";     
+callrest(lookupur,"handlePaidWithLookupResponse", null);      
+
+lookupur = "/services/data/v22.0/query?q=SELECT+id,dealme__ParamName__c,dealme__ParamValue__c+FROM+dealme__Param__c";     
+callrest(lookupur,"handleParamLookupResponse", null);      
+
+lookupur = "/services/data/v22.0/query?q=SELECT+id,name+FROM+dealme__DealType__c";     
+callrest(lookupur,"handleDealTypesLookupResponse", null);      
+
+lookupur = "/services/data/v22.0/query?q=SELECT+id,Name+FROM+Campaign";     
+callrest(lookupur,"handleCampaignLookupResponse", null);      
+
+
+//Deal Details
+$('.dealrow').live("click", function(e){
+    selectedDealId = "";
+    $(this).parent().addClass("highlight");
+   var id = $(this).parent().attr("id");
+    fetchDealRow(id);
+});
+
+$('.Edit').live("click", function(e){
+    var id = $(this).parent().parent().attr("id");
+    var rowType= $(this).parent().parent().attr("rowType");    
+    var rowBehave= $(this).parent().parent().attr("rowBehave");        
+    var actionTable= $(this).parent().parent().attr("actionTable");            
+    //rowType="deal" rowBehave="inline" actionTable="dealVehicleInfo"     
+
+    if(rowType == "deal"){
+        var $els = $("#dealVehicleInfo div.text, #dealForm div.text, #financingForm div.text");
+        EnableEdit($els);
+        $els = $("#dealVehicleInfo div.select, #dealForm div.select, #financingForm div.select");
+        EnableSelectEdit($els);
+        $els = $("#dealVehicleInfo div.checkbox, #dealForm div.checkbox, #financingForm div.checkbox");
+        EnableCheckBoxEdit($els);
+
+    }
+    
+     $("#dealSearch, #newDeal").addClass("hid");
+     $("#SaveEditedDeal, #CancelEditedDeal").removeClass("hid");
+         
+});//Edit complete
+
+function EnableEdit($el){
+    $.each($el,function() {
+        var bid = $(this).attr("id");
+        $(this).addClass("hid");
+        var editid = bid + "Edit";
+        $("#" + editid).removeClass("hid");
+        $("#" + editid + " input").val($(this).html());
+    });
+};
+
+function EnableCheckBoxEdit($el){
+    $.each($el,function() {
+        var bid = $(this).attr("id");
+        $(this).addClass("hid");
+        var editid = bid + "Edit";
+        $("#" + editid).removeClass("hid");
+        
+        //$("#" + editid + " input").val($(this).html());
+        
+        if($(this).html() == "true"){
+            $("#" + editid + " input").prop("checked", true);
+        }
+        
+    });
+};
+
+function EnableSelectEdit($el){
+    $.each($el,function() {
+
+        var bid = $(this).attr("id");
+        $(this).addClass("hid");
+        var selval = $(this).html();
+        var editid = bid + "Edit";
+        $("#" + editid).removeClass("hid");
+
+        $("#" + editid).find('option').each(function () {
+          if($(this).text() == selval){
+             $(this).attr("selected", "selected");
+          }
+        });
+
+    });
+};
+
+function CancelEnableEdit($el){
+    $.each($el,function() {
+        var bid = $(this).attr("id");
+        $(this).removeClass("hid");
+        var editid = bid + "Edit";
+        $("#" + editid).addClass("hid");
+//        $(this).html($("#" + editid + " input").val());  //for save      
+    });
+};
+
+function CancelEnableSelectEdit($el){
+    $.each($el,function() {
+        var bid = $(this).attr("id");
+        $(this).removeClass("hid");
+        var editid = bid + "Edit";
+        $("#" + editid).addClass("hid");
+
+//        $(this).html($("#" + editid + " option:selected").text()); //for save
+    });
+
+};
+
+$("#CancelEditedDeal").live("click", function(e){
+
+     $("#dealSearch, #newDeal").removeClass("hid");
+     $("#SaveEditedDeal, #CancelEditedDeal").addClass("hid");
+
+    var $el = $("#dealVehicleInfo div.text, #dealForm div.text, #financingForm div.text");
+    CancelEnableEdit($el);
+    var $el = $("#dealVehicleInfo div.select, #dealForm div.select, #financingForm div.select");
+    CancelEnableSelectEdit($el);
+
+});
+
+});
+</script>
+
+<script type="text/JavaScript">
+
+
+    
+function explode(type, fieldid, propertyid, title, classes, $val, att1, att2, datatype) {
+    if((datatype == "money") && ($val == null)){
+        $val = "0.00";
+    }else if((datatype == "number") && ($val == null)){
+        $val = "0";
+    }
+
+    var s = "";
+    if(type == "select"){
+        s+="<div id=\"" + fieldid + "IdDivEdit\" class=\"hid\"><select id=\"" + fieldid + "Id\" name=\"" + propertyid + "\"><option value=\"\">--Select--</option></select></div>";
+        s+="<div id=\"" + fieldid + "IdDiv\" class=\"select\">" + $val + "</div>";
+    }else if(type == "input"){
+        s+="<div id=\"" + fieldid + "IdDivEdit\" class=\"hid\"><input id=\"" + fieldid + "Id\" name=\"" + propertyid + "\"></input></div>";
+        s+="<div id=\"" + fieldid + "IdDiv\" class=\"text\">" + $val + "</div>";
+    }else if(type == "checkbox"){
+        s+="<div id=\"" + fieldid + "IdDivEdit\" class=\"hid\"><input type=\"checkbox\" id=\"" + fieldid + "Id\" cname=\"" + propertyid + "\"></input></div>";
+        s+="<div id=\"" + fieldid + "IdDiv\" class=\"checkbox\">" + $val + "</div>";
+    }
+    
+    return s;
+
+};
+
+function PopulateLookupData(){
+
+$.each(lookupres.records, function(i,item){
+          if(item.dealme__DmRole__r.dealme__type__c=="Sales"){          
+              $("#dmUserTmpl" ).tmpl(item.dealme__DmUser__r).appendTo( "#salesPerson1Id" );    
+              $("#dmUserTmpl" ).tmpl(item.dealme__DmUser__r).appendTo( "#salesPerson2Id" );    
+          }
+          if(item.dealme__DmRole__r.dealme__type__c=="Finance"){          
+              $("#dmUserTmpl" ).tmpl(item.dealme__DmUser__r).appendTo( "#accountsManagerId" );    
+          }
+    });          
+
+$.each(vendorlookupres.records, function(i,item){
+          if(item.dealme__VendorType__r.dealme__Type__c=="FinanceCompany"){          
+              $("#dmVendorTmpl" ).tmpl(item).appendTo( "#financeCompanyId" );    
+          }
+          if(item.dealme__VendorType__r.dealme__Type__c=="WarrantyCompany"){          
+              $("#dmVendorTmpl" ).tmpl(item).appendTo( "#warrantyCompanyId" );    
+          }
+          if(item.dealme__VendorType__r.dealme__Type__c=="GAPCompany"){          
+              $("#dmVendorTmpl" ).tmpl(item).appendTo( "#gapCompanyId" );    
+          }
+          if(item.dealme__VendorType__r.dealme__Type__c=="InsuranceCompany"){          
+              $("#dmVendorTmpl" ).tmpl(item).appendTo( "#insuranceCompanyId" );    
+          }
+
+    });          
+
+$.each(paidWithres.records, function(i,item){                 
+    $("#dmPaidWithTmpl" ).tmpl(item).appendTo( "#paidWithId" );    
+});          
+
+$.each(salesTaxlookupres.records, function(i,item){                         
+    $("#dmSalesTaxTmpl" ).tmpl(item).appendTo( "#salesTaxSelectId" );        
+});          
+
+$.each(dealTypesres.records, function(i,item){                         
+    $("#dmIdNameSelectTmpl" ).tmpl(item).appendTo( "#dealTypeId" );        
+});          
+
+$.each(campaignres.records, function(i,item){                         
+    item.Name = item.Name.substring(0, 20);
+    $("#dmIdNameSelectTmpl" ).tmpl(item).appendTo( "#campaignId" );        
+});        
+
+
+};
+
+
+function handleLookupResponse(data){
+lookupres = data;
+};
+
+function handleVendorLookupResponse(data){
+vendorlookupres = data;
+};
+
+function handleSalexTaxResponse(data){
+salesTaxlookupres = data;
+};
+
+function handlePaidWithLookupResponse(data){
+paidWithres= data;
+};
+
+function handleParamLookupResponse(data){
+paramsres= data;
+};
+
+function handleDealTypesLookupResponse(data){
+dealTypesres= data;
+};
+
+
+function handleCampaignLookupResponse(data){
+campaignres= data;
+};
+
+function handleDealUpdateResponse(data){
+//alert("Got deal update");
+$("#dealSearch, #newDeal").removeClass("hid");
+$("#SaveEditedDeal, #CancelEditedDeal").addClass("hid");
+
+fetchDealRow(selectedDealId);              
+};
+
+function fetchDealRow(id){
+     var ur = "/services/data/v22.0/query?q=SELECT+id,dealme__IsDealFunded__c,dealme__IsTagPaid__c,dealme__IsSpotDeal__c,dealme__IsQuote__c,dealme__SoldPrice__c,dealme__soldDate__c,dealme__Campaign__r.Name,dealme__Inventory__r.Id,dealme__Inventory__r.dealme__VIN__c,dealme__Inventory__r.dealme__Make__r.Name,(SELECT+id,dealme__Contact__r.Name+FROM+dealme__DealRefrences__r),(SELECT+id,dealme__payoff__c,dealme__allowance__c,dealme__Inventory__r.dealme__VIN__c,dealme__Inventory__r.dealme__Make__r.Name+FROM+dealme__DealTradeIns__r),(SELECT+dealme__Account__r.Id,dealme__Account__r.AccountNumber,dealme__Account__r.Name,dealme__Account__r.Phone+FROM+dealme__DealAccounts__r),dealme__DealType__r.Name,dealme__SalesTax__c,+dealme__Titles__c,+dealme__Tags__c,+dealme__Registration__c,dealme__DownPayment__c,+dealme__PaymentType__r.Name,+dealme__SalesPerson1__r.Name,+dealme__SalesPerson1Commision__c,dealme__SalesPerson2__r.Name,+dealme__SalesPerson2Commision__c,dealme__FinanceCompany__r.Name,dealme__discount__c,dealme__InterestRate__c,dealme__Term__c,dealme__BuyRate__c,dealme__FinanceReserve__c,dealme__WarrantyCompany__r.Name,dealme__WarrantyPrice__c,dealme__WarrantyCost__c,dealme__GapCompany__r.Name,dealme__GapPrice__c,dealme__GapCost__c,dealme__InsuranceCompany__r.Name,dealme__InsurancePrice__c,dealme__InsuranceCost__c+FROM+dealme__Deal__c+where+id='" + id + "'";
+     selectedDealId = id;
+     callrest(ur,"handleDealDetailsResponse", null); 
+};
+
+function handleDealDetailsResponse(data){
+    //alert("handleDealDetailsResponse called");
+    $("#dealAccounts tbody").children().remove();                                                                  
+    $.each(data.records[0].dealme__DealAccounts__r.records, function(i,item){
+          $("#dealAccountsRowTemplate" ).tmpl(item.dealme__Account__r).appendTo( "#dealAccounts tbody" );    
+    });                              
+
+    $("#dealTradeVehicles tbody").children().remove();                                                                  
+    $.each(data.records[0].dealme__DealTradeIns__r.records, function(i,item){
+          $("#dealTradeVehiclesRowTemplate" ).tmpl(item).appendTo( "#dealTradeVehicles tbody" );    
+    });                              
+
+    $("#dealRefrences tbody").children().remove();                                                                  
+    $.each(data.records[0].dealme__DealRefrences__r.records, function(i,item){
+          $("#dealRefrencesRowTemplate" ).tmpl(item).appendTo( "#dealRefrences tbody" );    
+    });                              
+
+    $("#dealVehicleInfo tbody").children().remove();                                                                  
+    $("#dealVehicleInfoRowTemplate" ).tmpl(data.records[0]).appendTo( "#dealVehicleInfo tbody" );    
+
+    $("#dealInfo").children().remove();                                                                  
+    $("#dealTemplate" ).tmpl(data.records[0]).appendTo( "#dealInfo" );    
+
+    $("#financeInfo").children().remove();                                                                  
+    $("#financeTemplate" ).tmpl(data.records[0]).appendTo( "#financeInfo" );    
+
+    $("#washoutInfo").children().remove();                                                                  
+    $("#washoutTemplate" ).tmpl(data.records[0]).appendTo( "#washoutInfo" );    
+
+    PopulateLookupData();
+};
+
+function handleDealsResponse(data){    
+    //alert("got results");
+    $("#searchResults tbody").children().remove();                                                                  
+    
+    $.each(data.records, function(i,item){
+          $("#dealRowTemplate" ).tmpl(item).appendTo( "#searchResults tbody" );    
+    });                              
+
+};
+
+function searchDeals() {
+    var ur = "/services/data/v22.0/query?q=SELECT+id,dealme__SoldPrice__c,dealme__Inventory__r.Id,dealme__Inventory__r.dealme__VIN__c,dealme__Inventory__r.dealme__Make__r.Name,(SELECT+id,dealme__payoff__c+FROM+dealme__DealTradeIns__r),(SELECT+id,dealme__Account__r.id,dealme__Account__r.Name+FROM+dealme__DealAccounts__r)+FROM+dealme__Deal__c";
+    callrest(ur,"handleDealsResponse", null);    
+
+};
+
+</script>
+
+<script type="text/JavaScript">
+function callrest(ur, cb, req){
+var sid = '{!$Api.Session_ID}';
+var elements = location.hostname.split(".");
+var instance = (elements.length == 3) ? elements[0] : elements[1];
+var instanceUrl = "https://" + instance + ".salesforce.com";
+
+var realurl = instanceUrl + ur;
+
+var proxyUrl = location.protocol + "//" + location.hostname + "/services/proxy";
+
+var req = "{}";
+
+$.ajax({
+               type: "GET",
+               url: proxyUrl ,
+          contentType: 'application/json',
+           processData: false,
+           data: null,                
+               success: eval(cb),
+                 error: function(jqXHR, textStatus, errorThrown){
+                                 alert("error status=" + jqXHR.status);
+                                 alert("error=" + jqXHR.statusText);
+                                 alert("errorThrown=" + errorThrown);
+                 },
+               dataType: "json",
+               beforeSend: function(xhr) {
+                  xhr.setRequestHeader("Authorization", "OAuth " + sid);
+                  xhr.setRequestHeader('SalesforceProxy-Endpoint', realurl );
+                  xhr.setRequestHeader('X-User-Agent', 'salesforce-toolkit-rest-javascript/' + "22.0");
+               }
+       });
+};
+
+
+function callrestPost(ur, cb, req){
+var sid = '{!$Api.Session_ID}';
+var elements = location.hostname.split(".");
+var instance = (elements.length == 3) ? elements[0] : elements[1];
+var instanceUrl = "https://" + instance + ".salesforce.com";
+
+var realurl = instanceUrl + ur;
+
+var proxyUrl = location.protocol + "//" + location.hostname + "/services/proxy";
+
+console.log("ur=" + ur );
+console.log("req=" + req);
+
+$.ajax({
+               type: "POST",
+               url: proxyUrl ,
+          contentType: 'application/json',
+           processData: true,
+           data: req,                
+               success: eval(cb),
+                 error: function(jqXHR, textStatus, errorThrown){
+                                 alert("error status=" + jqXHR.status);
+                                 alert("error=" + jqXHR.statusText);
+                                 alert("errorThrown=" + errorThrown);
+                 },
+               dataType: "json",
+               beforeSend: function(xhr) {
+                  xhr.setRequestHeader("Authorization", "OAuth " + sid);
+                  xhr.setRequestHeader('SalesforceProxy-Endpoint', realurl );
+                  xhr.setRequestHeader('X-User-Agent', 'salesforce-toolkit-rest-javascript/' + "22.0");
+               }
+       });
+};
+
+ </script>
+
+<div style="float: left;width:60%"> 
+<apex:pageBlock tabstyle="Account">
+
+          <input type = "text" id="dealSearchText" />
+          <button onclick="searchDeals()" id="dealSearch">Search Deals</button>
+          <button id="SaveEditedDeal" class="hid">Save Edited Deal</button>
+          <button id="CancelEditedDeal" class="hid">Cancel Edited Deal</button>          
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<input type="button" title="New" class="btn" value="New Deal" id="newDeal"/>
+
+    <table cellspacing="0" cellpadding="0" border="0" id="searchResults" class="list">
+       <colgroup span="2"></colgroup>
+       <thead class="rich-table-thead">
+          <tr class="headerRow ">
+              <th colspan="1" scope="col" class="headerRow">Action</th>
+              <th colspan="1" scope="col" class="headerRow">Id</th>
+              <th colspan="1" scope="col" class="headerRow">Price</th>
+              <th colspan="1" scope="col" class="headerRow">VIN</th>
+              <th colspan="1" scope="col" class="headerRow">Make</th>
+          </tr>
+       </thead>
+       <tbody />
+    </table>
+
+</apex:pageBlock>
+
+<apex:pageBlock >
+<form id="dealVehicleForm">
+<table id="dealVehicleInfo" cellspacing="0" cellpadding="0" border="0" class="detailList">
+<tbody>
+</tbody>
+</table>
+</form>
+</apex:pageBlock>
+
+
+<apex:pageBlock ><h5>Accounts</h5>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
+<input type="button" title="New" class="btn" value="New" id="newAccount"/>
+    <table cellspacing="0" cellpadding="0" border="0" id="dealAccounts" class="list">
+       <colgroup span="2"></colgroup>
+       <thead class="rich-table-thead">
+          <tr class="headerRow ">
+              <th colspan="1" scope="col" class="headerRow">Action</th>
+              <th colspan="1" scope="col" class="headerRow">Id</th>
+              <th colspan="1" scope="col" class="headerRow">Account Number</th>
+              <th colspan="1" scope="col" class="headerRow">Name</th>
+              <th colspan="1" scope="col" class="headerRow">Phone</th>
+          </tr>
+       </thead>
+       <tbody />
+    </table>
+</apex:pageBlock>
+
+<apex:pageBlock ><h5>Refrences</h5>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<input type="button" title="New" class="btn" value="New Reference" id="newReference"/>
+    <table cellspacing="0" cellpadding="0" border="0" id="dealRefrences" class="list ">
+       <colgroup span="2"></colgroup>
+       <thead class="rich-table-thead">
+          <tr class="headerRow ">
+              <th colspan="1" scope="col" class="headerRow">Action</th>
+              <th colspan="1" scope="col" class="headerRow">Id</th>
+              <th colspan="1" scope="col" class="headerRow">Name</th>              
+          </tr>
+       </thead>
+       <tbody />
+    </table>
+</apex:pageBlock>
+
+<apex:pageBlock >
+<h5>Trade-Ins</h5>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<input type="button" title="New" class="btn" value="New Trade-In" id="newTradeIn"/>
+    <table cellspacing="0" cellpadding="0" border="0" id="dealTradeVehicles" class="list">
+       <colgroup span="2"></colgroup>
+       <thead class="rich-table-thead">
+          <tr class="headerRow ">
+              <th colspan="1" scope="col" class="headerRow">Action</th>
+              <th colspan="1" scope="col" class="headerRow">Id</th>
+              <th colspan="1" scope="col" class="headerRow">Allownce</th>
+              <th colspan="1" scope="col" class="headerRow">PayOff</th>
+              <th colspan="1" scope="col" class="headerRow">Vin</th>
+              <th colspan="1" scope="col" class="headerRow">Make</th>              
+          </tr>
+       </thead>
+       <tbody />
+    </table>
+
+</apex:pageBlock>
+
+<apex:pageBlock >
+    <!-- Render a Section to show Account Search box with button -->
+    <apex:pageBlockSection title="Washout" >
+            <div id="washoutInfo"></div>
+    </apex:pageBlockSection>
+</apex:pageBlock> 
+
+
+</div>
+
+<div style="float: left; padding-left: 10px;" >
+
+<div style="float: clear;" >
+<apex:pageBlock >
+    <!-- Render a Section to show Account Search box with button -->
+    <apex:pageBlockSection title="Deal" >
+            <div id="dealInfo"></div>
+    </apex:pageBlockSection>
+</apex:pageBlock> 
+</div>
+
+
+<div style="float: clear;" >
+<apex:pageBlock >
+    <!-- Render a Section to show Account Search box with button -->
+    <apex:pageBlockSection title="Financing" >
+            <div id="financeInfo" ></div>
+    </apex:pageBlockSection>
+</apex:pageBlock> 
+</div>
+
+</div>
+
+</apex:page>

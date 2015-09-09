@@ -1,0 +1,7 @@
+<apex:page sidebar="false" showHeader="false">
+  
+<object data="/servlet/servlet.FileDownload—file?file={!$CurrentPage.parameters.id}" type="application/pdf" width="100%" height="300px">
+  <embed src="/servlet/servlet.FileDownload–file?file={!$CurrentPage.parameters.id}" width="100%" height="300px"/>
+</object>
+
+</apex:page>

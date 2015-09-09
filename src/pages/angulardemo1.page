@@ -1,0 +1,94 @@
+<apex:page >
+<html xmlns:ng="http://angularjs.org" id="ng:app" ng:app="project">
+
+  <head>
+<apex:includeScript value="{!$Resource.jquery}"/>
+<apex:includeScript value="{!$Resource.angularjs}"/>
+
+  </head>
+  <body>
+
+  <h1>Leads</h1>
+
+<div ng-controller="LeadCtrl">
+ <ul class="unstyled">
+        <li ng-repeat="lead in leads.records">
+            {{lead.id}}
+            {{lead.Name}}
+        </li>
+      </ul>
+
+</div>
+
+<script type="text/JavaScript">
+
+angular.module('project', []).
+  config(function($routeProvider) {
+    console.log("route");
+    $routeProvider.
+      when('/apex/angulardemo', {controller:LeadCtrl, templateUrl:'list.html'})
+  });
+
+function LeadCtrl($scope) {
+console.log("leadsctrl");
+var ur = "/services/data/v25.0/query?q=SELECT+id,Name+FROM+Lead";
+
+var successHandler = function(data)    { 
+    $scope.$apply(function () {
+      $scope.leads = data;
+    });
+}
+
+callrestapi(ur, successHandler); 
+
+function callrestapi(ur, successHandler){
+
+var sid = '{!$Api.Session_ID}';
+var elements = location.hostname.split(".");
+var instance = (elements.length == 3) ? elements[0] : elements[1];
+var instanceUrl = "https://" + instance + ".salesforce.com";
+
+var realurl = instanceUrl + ur;
+
+var proxyUrl = location.protocol + "//" + location.hostname + "/services/proxy";
+
+var req = "{}";
+var res;
+
+$.ajax({
+               type: "GET",
+               url: proxyUrl ,
+          contentType: 'application/json',
+           processData: false,
+           data: null,                
+           success:  function(data){ 
+                          successHandler(data );
+               },
+                error: function(jqXHR, textStatus, errorThrown){
+                                 alert("error status=" + jqXHR.status);
+                                 alert("error=" + jqXHR.statusText);
+                                 alert("errorThrown=" + errorThrown);
+                 },
+               dataType: "json",
+               beforeSend: function(xhr) {
+                  xhr.setRequestHeader("Authorization", "OAuth " + sid);
+                  xhr.setRequestHeader('SalesforceProxy-Endpoint', realurl );
+                  xhr.setRequestHeader('X-User-Agent', 'salesforce-toolkit-rest-javascript/' + "22.0");
+               }
+       });
+
+
+}; 
+
+ 
+};
+
+$(function(){
+     
+});
+</script>
+
+
+</body>
+</html>
+</apex:page>
